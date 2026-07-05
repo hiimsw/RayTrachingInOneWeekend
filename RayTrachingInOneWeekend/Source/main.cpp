@@ -25,9 +25,6 @@ static void WriteColor(uint32_t* pixel, const Color& color);
 
 int main(int argc, char* argv[])
 {
-	HWND hwnd = GetConsoleWindow();
-	ShowWindow(hwnd, SW_HIDE);
-
 	VERIFY(SDL_Init(SDL_INIT_VIDEO) == 0, "SDL_Init failed [error:%s]", SDL_GetError());
 
 	SDL_Window* window = SDL_CreateWindow("VoxelWithOpenGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, IMAGE_WIDTH, IMAGE_HEIGHT, SDL_WINDOW_OPENGL bitor SDL_WINDOW_SHOWN);
@@ -124,17 +121,6 @@ void WriteColor(uint32_t* pixel, const Color& color)
 
 	constexpr uint32_t ALPHA = 0xFF;
 	*pixel |= ALPHA;
-}
-
-void WriteColor(std::string* buffer, const Color& color)
-{
-	ASSERT(buffer != nullptr);
-
-	uint32_t r = uint32_t(color.X * 255.0f);
-	uint32_t g = uint32_t(color.Y * 255.0f);
-	uint32_t b = uint32_t(color.Z * 255.0f);
-
-	*buffer += std::format("{} {} {}\n", r, g, b);
 }
 
 Color GetRayColor(const Ray& ray)
