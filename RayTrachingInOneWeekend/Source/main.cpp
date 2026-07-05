@@ -25,6 +25,9 @@ static void WriteColor(uint32_t* pixel, const Color& color);
 
 int main(int argc, char* argv[])
 {
+	HWND hwnd = GetConsoleWindow();
+	ShowWindow(hwnd, SW_HIDE);
+
 	VERIFY(SDL_Init(SDL_INIT_VIDEO) == 0, "SDL_Init failed [error:%s]", SDL_GetError());
 
 	SDL_Window* window = SDL_CreateWindow("VoxelWithOpenGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, IMAGE_WIDTH, IMAGE_HEIGHT, SDL_WINDOW_OPENGL bitor SDL_WINDOW_SHOWN);
@@ -55,6 +58,12 @@ int main(int argc, char* argv[])
 		{
 		case SDL_KEYDOWN:
 		{
+			uint32_t scancode = event.key.keysym.scancode;
+			if (scancode == SDL_SCANCODE_ESCAPE)
+			{
+				goto QUIT_PROCESS;
+			}
+
 			break;
 		}
 
