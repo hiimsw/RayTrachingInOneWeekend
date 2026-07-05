@@ -7,6 +7,8 @@
 #include <memory>
 #include <unordered_map>
 
+#include <SDL2/SDL.h>
+
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 

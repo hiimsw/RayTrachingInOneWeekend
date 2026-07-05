@@ -81,23 +81,6 @@ float GetLength(const Vector3& v)
 
 /*
 * ======================================
-* Color
-* ======================================
-*/
-
-void WriteColor(std::string* buffer, const Color& color)
-{
-	ASSERT(buffer != nullptr);
-
-	uint32_t r = uint32_t(color.X * 255.0f);
-	uint32_t g = uint32_t(color.Y * 255.0f);
-	uint32_t b = uint32_t(color.Z * 255.0f);
-
-	*buffer += std::format("{} {} {}\n", r, g, b);
-}
-
-/*
-* ======================================
 * Ray
 * ======================================
 */

@@ -62,7 +62,6 @@ using Point3 = Vector3;
 */
 
 using Color = Vector3;
-void WriteColor(std::string* buffer, const Color& color);
 
 /*
 * ======================================
