@@ -91,8 +91,15 @@ void Render(uint32_t* framebuffer, const uint32_t pitch)
 			Vector3 rayDirection = Normalize(pixelCenter - CAMERA_CENTER);
 			Ray ray{ .Origin = CAMERA_CENTER, .Direction = rayDirection };
 
-			float r = GetLength(Vector3(pixelCenter.X, pixelCenter.Y, 0.0f) - Vector3(CAMERA_CENTER.X, CAMERA_CENTER.Y, 0.0f));
-			if (r <= 0.5f)
+			constexpr Vector3 SPHERE_CENTER{ 0.0f, 0.0f, -1.0f };
+			constexpr float SPHERE_R = 0.5f;
+			const Vector3 rayToSpehre = (SPHERE_CENTER - ray.Origin);
+			const float a = DotProduct(ray.Direction, ray.Direction);
+			const float b = -2.0f * DotProduct(ray.Direction, rayToSpehre);
+			const float c = DotProduct(rayToSpehre, rayToSpehre) - (SPHERE_R * SPHERE_R);
+			const float discriminant = (b * b) - (4 * a * c);
+
+			if (discriminant >= 0.0f)
 			{
 				Color color{ 0.5f, 0.5f, 0.0f };
 				WriteColor(pixel, color);
