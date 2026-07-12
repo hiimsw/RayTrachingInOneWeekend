@@ -102,6 +102,15 @@ void Render(uint32_t* framebuffer, const uint32_t pitch)
 			if (discriminant >= 0.0f)
 			{
 				Color color{ 0.5f, 0.5f, 0.0f };
+
+				if (const float t = (-b - std::sqrt(discriminant)) / (2.0f * a); 
+					t > 0.0f)
+				{
+					const Vector3 pointOnRay = GetPointOnRay(ray, t);
+					const Vector3 normal = Normalize(pointOnRay - SPHERE_CENTER);
+					color = (normal + 1.0f) * 0.5f;
+				}
+
 				WriteColor(pixel, color);
 			}
 			else
