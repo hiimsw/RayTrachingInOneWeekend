@@ -94,16 +94,18 @@ void Render(uint32_t* framebuffer, const uint32_t pitch)
 			constexpr Vector3 SPHERE_CENTER{ 0.0f, 0.0f, -1.0f };
 			constexpr float SPHERE_R = 0.5f;
 			const Vector3 rayToSpehre = (SPHERE_CENTER - ray.Origin);
+
+			// 근의 공식의 b에 -2h를 대입하여 간략화한 식을 적용한다.
 			const float a = DotProduct(ray.Direction, ray.Direction);
-			const float b = -2.0f * DotProduct(ray.Direction, rayToSpehre);
+			const float h = DotProduct(ray.Direction, rayToSpehre);
 			const float c = DotProduct(rayToSpehre, rayToSpehre) - (SPHERE_R * SPHERE_R);
-			const float discriminant = (b * b) - (4 * a * c);
+			const float discriminant = (h * h) - (a * c);
 
 			if (discriminant >= 0.0f)
 			{
 				Color color{ 0.5f, 0.5f, 0.0f };
 
-				if (const float t = (-b - std::sqrt(discriminant)) / (2.0f * a); 
+				if (const float t = (h - std::sqrt(discriminant)) / a; 
 					t > 0.0f)
 				{
 					const Vector3 pointOnRay = GetPointOnRay(ray, t);
