@@ -174,7 +174,7 @@ bool CheckCollisionRaySphere(const Ray& ray, const Sphere& sphere, CollisionResu
 	float distance = (h - discriminantSqrt) / a;
 	if (distance <= 0.0f)
 	{
-		// 나머지 지점도 distance가 0 이하이면 최종적으로 구가 ray보다 뒤에 있다는 의미가 된다.
+		// 나머지 지점도 distance가 0 이하이면 구가 ray보다 뒤에 있다는 의미가 된다.
 		distance = (h + discriminantSqrt) / a;
 		if (distance <= 0.0f)
 		{
