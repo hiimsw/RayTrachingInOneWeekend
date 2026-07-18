@@ -168,13 +168,15 @@ bool CheckCollisionRaySphere(const Ray& ray, const Sphere& sphere, CollisionResu
 		return false;
 	}
 
-	if (const float t = (h - std::sqrt(discriminant)) / a;
-		t > 0.0f)
+	const float t = (h - std::sqrt(discriminant)) / a;
+	if (t <= 0.0f)
 	{
-		outCollisionResult->Distance = t;
-		outCollisionResult->Point = GetPointOnRay(ray, t);
-		outCollisionResult->Normal = (outCollisionResult->Point - sphere.Center) / sphere.Radius;
+		return false;
 	}
+
+	outCollisionResult->Distance = t;
+	outCollisionResult->Point = GetPointOnRay(ray, t);
+	outCollisionResult->Normal = (outCollisionResult->Point - sphere.Center) / sphere.Radius;
 
 	return true;
 }
