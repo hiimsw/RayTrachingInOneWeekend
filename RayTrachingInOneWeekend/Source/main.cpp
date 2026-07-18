@@ -167,15 +167,23 @@ bool CheckCollisionRaySphere(const Ray& ray, const Sphere& sphere, CollisionResu
 	{
 		return false;
 	}
+	
+	const float discriminantSqrt = std::sqrt(discriminant);
 
-	const float t = (h - std::sqrt(discriminant)) / a;
-	if (t <= 0.0f)
+	// ray와 근접한 충돌 지점의 distance가 0 이하이면 ray가 구 내부에 속한다는 의미이다.
+	float distance = (h - discriminantSqrt) / a;
+	if (distance <= 0.0f)
 	{
-		return false;
+		// 나머지 지점도 distance가 0 이하이면 최종적으로 구가 ray보다 뒤에 있다는 의미가 된다.
+		distance = (h + discriminantSqrt) / a;
+		if (distance <= 0.0f)
+		{
+			return false;
+		}
 	}
 
-	outCollisionResult->Distance = t;
-	outCollisionResult->Point = GetPointOnRay(ray, t);
+	outCollisionResult->Distance = distance;
+	outCollisionResult->Point = GetPointOnRay(ray, distance);
 	outCollisionResult->Normal = (outCollisionResult->Point - sphere.Center) / sphere.Radius;
 
 	return true;
