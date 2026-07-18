@@ -1,6 +1,19 @@
 #include "pch.h"
 #include "Util.h"
 
+struct Sphere
+{
+	Point3 Center;
+	float Radius;
+};
+
+struct CollisionResult
+{
+	Point3 Point;
+	Vector3 Normal;
+	float Distance;
+};
+
 constexpr float ASPECT_RATIO = 16.0f / 9.0f;
 constexpr uint32_t IMAGE_WIDTH = 800;
 constexpr uint32_t IMAGE_HEIGHT = uint32_t(max(IMAGE_WIDTH / ASPECT_RATIO, 1.0f));
@@ -22,6 +35,8 @@ constexpr Vector3 PIXEL00_LOCATION = VIEWPORT_LEFT_TOP + 0.5f * (PIXEL_DELTA_U +
 static void Render(uint32_t* framebuffer, const uint32_t pitch);
 static void WriteColor(uint32_t* pixel, const Color& color);
 [[nodiscard]] static Color GetRayColor(const Ray& ray);
+
+[[nodiscard]] static bool CheckCollisionRaySphere(const Ray& ray, const Sphere& sphere, CollisionResult* outCollisionResult);
 
 int main(int argc, char* argv[])
 {
@@ -91,35 +106,18 @@ void Render(uint32_t* framebuffer, const uint32_t pitch)
 			Vector3 rayDirection = Normalize(pixelCenter - CAMERA_CENTER);
 			Ray ray{ .Origin = CAMERA_CENTER, .Direction = rayDirection };
 
-			constexpr Vector3 SPHERE_CENTER{ 0.0f, 0.0f, -1.0f };
-			constexpr float SPHERE_R = 0.5f;
-			const Vector3 rayToSpehre = (SPHERE_CENTER - ray.Origin);
-
-			// 근의 공식의 b에 -2h를 대입하여 간략화한 식을 적용한다.
-			const float a = DotProduct(ray.Direction, ray.Direction);
-			const float h = DotProduct(ray.Direction, rayToSpehre);
-			const float c = DotProduct(rayToSpehre, rayToSpehre) - (SPHERE_R * SPHERE_R);
-			const float discriminant = (h * h) - (a * c);
-
-			if (discriminant >= 0.0f)
+			Color color{};
+			if (CollisionResult collisionResult{};
+				CheckCollisionRaySphere(ray, Sphere{ .Center = { 0.0f, 0.0f, -1.0f }, .Radius = 0.5f }, &collisionResult))
 			{
-				Color color{ 0.5f, 0.5f, 0.0f };
-
-				if (const float t = (h - std::sqrt(discriminant)) / a; 
-					t > 0.0f)
-				{
-					const Vector3 pointOnRay = GetPointOnRay(ray, t);
-					const Vector3 normal = Normalize(pointOnRay - SPHERE_CENTER);
-					color = (normal + 1.0f) * 0.5f;
-				}
-
-				WriteColor(pixel, color);
+				color = (collisionResult.Normal + 1.0f) * 0.5f;
 			}
 			else
 			{
-				Color color = GetRayColor(ray);
-				WriteColor(pixel, color);
+				color = GetRayColor(ray);
 			}
+
+			WriteColor(pixel, color);
 		}
 	}
 }
@@ -151,4 +149,32 @@ Color GetRayColor(const Ray& ray)
 	const Color color = Lerp(BOTTOM_COLOR, TOP_COLOR, a);
 
 	return color;
+}
+
+bool CheckCollisionRaySphere(const Ray& ray, const Sphere& sphere, CollisionResult* outCollisionResult)
+{
+	ASSERT(outCollisionResult != nullptr);
+
+	const Vector3 rayToSpehre = (sphere.Center - ray.Origin);
+
+	// 근의 공식의 b에 -2h를 대입하여 간략화한 식을 적용한다.
+	const float a = DotProduct(ray.Direction, ray.Direction);
+	const float h = DotProduct(ray.Direction, rayToSpehre);
+	const float c = DotProduct(rayToSpehre, rayToSpehre) - (sphere.Radius * sphere.Radius);
+	const float discriminant = (h * h) - (a * c);
+
+	if (discriminant < 0.0f)
+	{
+		return false;
+	}
+
+	if (const float t = (h - std::sqrt(discriminant)) / a;
+		t > 0.0f)
+	{
+		outCollisionResult->Distance = t;
+		outCollisionResult->Point = GetPointOnRay(ray, t);
+		outCollisionResult->Normal = (outCollisionResult->Point - sphere.Center) / sphere.Radius;
+	}
+
+	return true;
 }
