@@ -32,6 +32,9 @@ constexpr Point3 CAMERA_CENTER{};
 constexpr Vector3 VIEWPORT_LEFT_TOP = CAMERA_CENTER - Vector3(0.0f, 0.0f, FOCAL_LENGTH) - (VIEWPORT_U * 0.5f) - (VIEWPORT_V * 0.5f);
 constexpr Vector3 PIXEL00_LOCATION = VIEWPORT_LEFT_TOP + 0.5f * (PIXEL_DELTA_U + PIXEL_DELTA_V);
 
+static std::array<Sphere, 2> gSpheres;
+
+static void Initialize();
 static void Render(uint32_t* framebuffer, const uint32_t pitch);
 static void WriteColor(uint32_t* pixel, const Color& color);
 [[nodiscard]] static Color GetRayColor(const Ray& ray);
@@ -55,6 +58,7 @@ int main(int argc, char* argv[])
 	int pitch = 0;
 	VERIFY(SDL_LockTexture(frame, nullptr, &framebuffer, &pitch) == 0, "SDL_LockTexture failed [error:%s]", SDL_GetError());
 
+	Initialize();
 	Render(static_cast<uint32_t*>(framebuffer), pitch);
 
 	SDL_UnlockTexture(frame);
@@ -91,6 +95,23 @@ QUIT_PROCESS:
 	return 0;
 }
 
+void Initialize()
+{
+	// Main
+	gSpheres[0] =
+	{
+		.Center = { 0.0f, 0.0f, -1.0f },
+		.Radius = 0.5f
+	};
+
+	// Ground
+	gSpheres[1] =
+	{
+		.Center = { 0.0f, -100.5f, -1.0f },
+		.Radius = 100.0f
+	};
+}
+
 void Render(uint32_t* framebuffer, const uint32_t pitch)
 {
 	ASSERT(framebuffer != nullptr);
@@ -106,15 +127,18 @@ void Render(uint32_t* framebuffer, const uint32_t pitch)
 			Vector3 rayDirection = Normalize(pixelCenter - CAMERA_CENTER);
 			Ray ray{ .Origin = CAMERA_CENTER, .Direction = rayDirection };
 
-			Color color{};
-			if (CollisionResult collisionResult{};
-				CheckCollisionRaySphere(ray, Sphere{ .Center = { 0.0f, 0.0f, -1.0f }, .Radius = 0.5f }, &collisionResult))
+			Color color = GetRayColor(ray);
+			float nearestDistance = FLT_MAX;
+
+			for (const Sphere& sphere : gSpheres)
 			{
-				color = (collisionResult.Normal + 1.0f) * 0.5f;
-			}
-			else
-			{
-				color = GetRayColor(ray);
+				if (CollisionResult collisionResult{};
+					CheckCollisionRaySphere(ray, sphere, &collisionResult)
+					and collisionResult.Distance < nearestDistance)
+				{
+					color = (collisionResult.Normal + 1.0f) * 0.5f;
+					nearestDistance = collisionResult.Distance;
+				}
 			}
 
 			WriteColor(pixel, color);
