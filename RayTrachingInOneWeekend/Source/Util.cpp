@@ -90,3 +90,17 @@ Point3 GetPointOnRay(const Ray& ray, const float t)
 	const Point3 point = ray.Origin + (ray.Direction * t);
 	return point;
 }
+
+/*
+* ======================================
+* Random Definition
+* ======================================
+*/
+
+
+float RandRange(const float min, const float max)
+{
+	const float randFloat = float(std::rand()) / RAND_MAX;
+	const float result = Lerp(min, max, randFloat);
+	return result;
+}

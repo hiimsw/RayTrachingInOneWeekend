@@ -76,7 +76,15 @@ struct Ray
 };
 static_assert(std::is_trivial<Ray>::value and std::is_standard_layout<Ray>::value, "Ray는 POD가 유지되어야 합니다.");
 
-Vector3 GetPointOnRay(const Ray& ray, const float t);
+[[nodiscard]] Vector3 GetPointOnRay(const Ray& ray, const float t);
+
+/*
+* ======================================
+* Random Declaration
+* ======================================
+*/
+
+[[nodiscard]] float RandRange(const float min, const float max);
 
 /*
 * ======================================
