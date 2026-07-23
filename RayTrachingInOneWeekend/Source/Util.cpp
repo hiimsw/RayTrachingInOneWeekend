@@ -73,10 +73,46 @@ Vector3 CrossProduct(const Vector3& lhs, const Vector3& rhs)
 	return result;
 }
 
+float GetLengthSquared(const Vector3& v)
+{
+	const float result = (v.X * v.X) + (v.Y * v.Y) + (v.Z * v.Z);
+	return result;
+}
+
 float GetLength(const Vector3& v)
 {
-	const float result = std::sqrtf((v.X * v.X) + (v.Y * v.Y) + (v.Z * v.Z));
+	const float lengthSquared = GetLengthSquared(v);
+	const float result = std::sqrtf(lengthSquared);
 	return result;
+}
+
+float RandRange(const float min, const float max)
+{
+	const float randFloat = float(std::rand()) / RAND_MAX;
+	const float result = Lerp(min, max, randFloat);
+	return result;
+}
+
+Vector3 GetRandomUnitVector()
+{
+	constexpr float EPSILON_LENGTH_SQUARED = 1e-8f;
+
+	while (true)
+	{
+		Vector3 result =
+		{
+			.X = RandRange(-1.0f, 1.0f),
+			.Y = RandRange(-1.0f, 1.0f),
+			.Z = RandRange(-1.0f, 1.0f),
+		};
+
+		const float lengthSquared = GetLengthSquared(result);
+		if (EPSILON_LENGTH_SQUARED <= lengthSquared and lengthSquared <= 1.0f)
+		{
+			result /= sqrtf(lengthSquared);
+			return result;
+		}
+	}
 }
 
 /*
@@ -89,18 +125,4 @@ Point3 GetPointOnRay(const Ray& ray, const float t)
 {
 	const Point3 point = ray.Origin + (ray.Direction * t);
 	return point;
-}
-
-/*
-* ======================================
-* Random Definition
-* ======================================
-*/
-
-
-float RandRange(const float min, const float max)
-{
-	const float randFloat = float(std::rand()) / RAND_MAX;
-	const float result = Lerp(min, max, randFloat);
-	return result;
 }
