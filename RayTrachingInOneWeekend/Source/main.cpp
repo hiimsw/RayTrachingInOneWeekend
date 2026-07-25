@@ -32,6 +32,7 @@ constexpr Point3 CAMERA_CENTER{};
 constexpr Vector3 VIEWPORT_LEFT_TOP = CAMERA_CENTER - Vector3(0.0f, 0.0f, FOCAL_LENGTH) - (VIEWPORT_U * 0.5f) - (VIEWPORT_V * 0.5f);
 constexpr Vector3 PIXEL00_LOCATION = VIEWPORT_LEFT_TOP + 0.5f * (PIXEL_DELTA_U + PIXEL_DELTA_V);
 constexpr uint32_t SAMPLE_COUNT_PER_PIXEL = 500;
+constexpr uint32_t MAX_RAY_DEPTH = 10;
 
 static std::array<Sphere, 2> gSpheres;
 
@@ -39,7 +40,7 @@ static void Initialize();
 static void Render(uint32_t* framebuffer, const uint32_t pitch);
 static void WriteColor(uint32_t* pixel, const Color& color);
 
-[[nodiscard]] static Color GetRayColor(const Ray& ray);
+[[nodiscard]] static Color GetRayColor(const Ray& ray, const uint32_t depth);
 
 [[nodiscard]] static bool CheckCollisionRaySphere(const Ray& ray, const Sphere& sphere, CollisionResult* outCollisionResult);
 
@@ -133,7 +134,7 @@ void Render(uint32_t* framebuffer, const uint32_t pitch)
 				Vector3 pixelCenter = PIXEL00_LOCATION + ((j + randomOffset.X) * PIXEL_DELTA_U) + ((i + randomOffset.Y) * PIXEL_DELTA_V);
 				Vector3 rayDirection = Normalize(pixelCenter - CAMERA_CENTER);
 				Ray ray{ .Origin = CAMERA_CENTER, .Direction = rayDirection };
-				rayColor += GetRayColor(ray);
+				rayColor += GetRayColor(ray, MAX_RAY_DEPTH);
 			}
 
 			rayColor /= float(SAMPLE_COUNT_PER_PIXEL);
@@ -159,8 +160,14 @@ void WriteColor(uint32_t* pixel, const Color& color)
 	*pixel |= ALPHA;
 }
 
-Color GetRayColor(const Ray& ray)
+Color GetRayColor(const Ray& ray, const uint32_t depth)
 {
+	if (depth <= 0)
+	{
+		DEBUG_LOG("depth");
+		return Color{};
+	}
+
 	CollisionResult nearestCollisionResult{ .Distance = FLT_MAX };
 
 	for (const Sphere& sphere : gSpheres)
@@ -184,7 +191,7 @@ Color GetRayColor(const Ray& ray)
 		}
 
 		Ray reflectedRay{ .Origin = nearestCollisionResult.Point, .Direction = reflectedDirection };
-		return 0.5f * GetRayColor(reflectedRay);
+		return 0.5f * GetRayColor(reflectedRay, depth - 1);
 	}
 
 	constexpr Color TOP_COLOR{ 0.5f, 0.7f, 1.0f };
