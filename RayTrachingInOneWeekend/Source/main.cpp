@@ -164,7 +164,6 @@ Color GetRayColor(const Ray& ray, const uint32_t depth)
 {
 	if (depth <= 0)
 	{
-		DEBUG_LOG("depth");
 		return Color{};
 	}
 
