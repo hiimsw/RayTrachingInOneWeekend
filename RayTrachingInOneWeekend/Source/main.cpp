@@ -31,7 +31,7 @@ constexpr float FOCAL_LENGTH = 1.0f;
 constexpr Point3 CAMERA_CENTER{};
 constexpr Vector3 VIEWPORT_LEFT_TOP = CAMERA_CENTER - Vector3(0.0f, 0.0f, FOCAL_LENGTH) - (VIEWPORT_U * 0.5f) - (VIEWPORT_V * 0.5f);
 constexpr Vector3 PIXEL00_LOCATION = VIEWPORT_LEFT_TOP + 0.5f * (PIXEL_DELTA_U + PIXEL_DELTA_V);
-constexpr uint32_t SAMPLE_COUNT_PER_PIXEL = 10;
+constexpr uint32_t SAMPLE_COUNT_PER_PIXEL = 500;
 
 static std::array<Sphere, 2> gSpheres;
 
@@ -124,35 +124,20 @@ void Render(uint32_t* framebuffer, const uint32_t pitch)
 
 		for (uint32_t j = 0; j < IMAGE_WIDTH; ++j)
 		{
-			Color pixelColor{};
+			uint32_t* pixel = &framebuffer[y + j];
+			Color rayColor{};
+
 			for (uint32_t k = 0; k < SAMPLE_COUNT_PER_PIXEL; ++k)
 			{
 				Vector3 randomOffset = { RandRange(-0.5f, 0.5f), RandRange(-0.5f, 0.5f), 0.0f };
 				Vector3 pixelCenter = PIXEL00_LOCATION + ((j + randomOffset.X) * PIXEL_DELTA_U) + ((i + randomOffset.Y) * PIXEL_DELTA_V);
 				Vector3 rayDirection = Normalize(pixelCenter - CAMERA_CENTER);
 				Ray ray{ .Origin = CAMERA_CENTER, .Direction = rayDirection };
-
-				float nearestDistance = FLT_MAX;
-
-				Color color = GetRayColor(ray);
-				for (const Sphere& sphere : gSpheres)
-				{
-					if (CollisionResult collisionResult{};
-						CheckCollisionRaySphere(ray, sphere, &collisionResult)
-						and collisionResult.Distance < nearestDistance)
-					{
-						color = (collisionResult.Normal + 1.0f) * 0.5f;
-						nearestDistance = collisionResult.Distance;
-					}
-				}
-
-				pixelColor += color;
+				rayColor += GetRayColor(ray);
 			}
 
-			pixelColor /= float(SAMPLE_COUNT_PER_PIXEL);
-
-			uint32_t* pixel = &framebuffer[y + j];
-			WriteColor(pixel, pixelColor);
+			rayColor /= float(SAMPLE_COUNT_PER_PIXEL);
+			WriteColor(pixel, rayColor);
 		}
 	}
 }
@@ -176,14 +161,40 @@ void WriteColor(uint32_t* pixel, const Color& color)
 
 Color GetRayColor(const Ray& ray)
 {
+	CollisionResult nearestCollisionResult{ .Distance = FLT_MAX };
+
+	for (const Sphere& sphere : gSpheres)
+	{
+		CollisionResult collisionResult{};
+
+		if (CheckCollisionRaySphere(ray, sphere, &collisionResult)
+			and collisionResult.Distance < nearestCollisionResult.Distance)
+		{
+			nearestCollisionResult = collisionResult;
+		}
+	}
+
+	if (const bool bCollision = (nearestCollisionResult.Distance < FLT_MAX);
+		bCollision)
+	{
+		Vector3 reflectedDirection = GetRandomUnitVector();
+		if (DotProduct(reflectedDirection, nearestCollisionResult.Normal) < 0.0f)
+		{
+			reflectedDirection *= -1.0f;
+		}
+
+		Ray reflectedRay{ .Origin = nearestCollisionResult.Point, .Direction = reflectedDirection };
+		return 0.5f * GetRayColor(reflectedRay);
+	}
+
 	constexpr Color TOP_COLOR{ 0.5f, 0.7f, 1.0f };
 	constexpr Color BOTTOM_COLOR{ 1.0f, 1.0, 1.0 };
 
 	const Vector3 rayDirection = Normalize(ray.Direction);
 	const float a = 0.5f * (rayDirection.Y + 1.0f);
-	const Color color = Lerp(BOTTOM_COLOR, TOP_COLOR, a);
+	Color rayColor = Lerp(BOTTOM_COLOR, TOP_COLOR, a);
 
-	return color;
+	return rayColor;
 }
 
 bool CheckCollisionRaySphere(const Ray& ray, const Sphere& sphere, CollisionResult* outCollisionResult)
