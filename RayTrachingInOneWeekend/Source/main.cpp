@@ -38,6 +38,7 @@ static std::array<Sphere, 2> gSpheres;
 
 static void Initialize();
 static void Render(uint32_t* framebuffer, const uint32_t pitch);
+static float EncodeGamma(const float value);
 static void WriteColor(uint32_t* pixel, const Color& color);
 
 [[nodiscard]] static Color GetRayColor(const Ray& ray, const uint32_t depth);
@@ -143,17 +144,30 @@ void Render(uint32_t* framebuffer, const uint32_t pitch)
 	}
 }
 
+float EncodeGamma(const float value)
+{
+	const float result = (value > 0.0f) ? sqrtf(value) : 0.0f;
+	return result;
+}
+
 void WriteColor(uint32_t* pixel, const Color& color)
 {
 	ASSERT(pixel != nullptr);
 
-	uint32_t r = uint32_t(min(color.X * 255.0f, 255.0f));
+	const Color gammRGB
+	{
+		.X = EncodeGamma(color.X),
+		.Y = EncodeGamma(color.Y),
+		.Z = EncodeGamma(color.Z)
+	};
+
+	uint32_t r = uint32_t(min(gammRGB.X * 255.0f, 255.0f));
 	*pixel = r << 24;
 
-	uint32_t g = uint32_t(min(color.Y * 255.0f, 255.0f));
+	uint32_t g = uint32_t(min(gammRGB.Y * 255.0f, 255.0f));
 	*pixel |= g << 16;
 
-	uint32_t b = uint32_t(min(color.Z * 255.0f, 255.0f));
+	uint32_t b = uint32_t(min(gammRGB.Z * 255.0f, 255.0f));
 	*pixel |= b << 8;
 
 	constexpr uint32_t ALPHA = 0xFF;
