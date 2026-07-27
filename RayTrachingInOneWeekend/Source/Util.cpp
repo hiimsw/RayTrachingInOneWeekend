@@ -86,6 +86,18 @@ float GetLength(const Vector3& v)
 	return result;
 }
 
+
+bool IsNearZero(const Vector3& v)
+{
+	constexpr float EPSILON = 1e-8f;
+
+	const float result = std::fabs(v.X) < EPSILON
+		and std::fabs(v.Y) < EPSILON
+		and std::fabs(v.Z) < EPSILON;
+
+	return result;
+}
+
 float RandRange(const float min, const float max)
 {
 	const float randFloat = float(std::rand()) / RAND_MAX;
