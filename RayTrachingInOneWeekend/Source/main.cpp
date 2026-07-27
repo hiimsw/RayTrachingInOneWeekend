@@ -31,7 +31,7 @@ constexpr float FOCAL_LENGTH = 1.0f;
 constexpr Point3 CAMERA_CENTER{};
 constexpr Vector3 VIEWPORT_LEFT_TOP = CAMERA_CENTER - Vector3(0.0f, 0.0f, FOCAL_LENGTH) - (VIEWPORT_U * 0.5f) - (VIEWPORT_V * 0.5f);
 constexpr Vector3 PIXEL00_LOCATION = VIEWPORT_LEFT_TOP + 0.5f * (PIXEL_DELTA_U + PIXEL_DELTA_V);
-constexpr uint32_t SAMPLE_COUNT_PER_PIXEL = 300;
+constexpr uint32_t SAMPLE_COUNT_PER_PIXEL = 500;
 constexpr uint32_t MAX_RAY_DEPTH = 10;
 
 static std::array<Sphere, 2> gSpheres;
@@ -197,11 +197,17 @@ Color GetRayColor(const Ray& ray, const uint32_t depth)
 	if (const bool bCollision = (nearestCollisionResult.Distance < FLT_MAX);
 		bCollision)
 	{
-		const Ray reflectedRay
+		Ray reflectedRay
 		{
 			.Origin = nearestCollisionResult.Point,
 			.Direction = Normalize(nearestCollisionResult.Normal + GetRandomUnitVector())
 		};
+
+		if (IsNearZero(reflectedRay.Direction))
+		{
+			reflectedRay.Direction = nearestCollisionResult.Normal;
+		}
+
 		const Color color = 0.5f * GetRayColor(reflectedRay, depth - 1);
 
 		return color;

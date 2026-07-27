@@ -45,6 +45,7 @@ static_assert(std::is_trivial<Vector3>::value and std::is_standard_layout<Vector
 [[nodiscard]] Vector3 CrossProduct(const Vector3& lhs, const Vector3& rhs);
 [[nodiscard]] float GetLengthSquared(const Vector3& v);
 [[nodiscard]] float GetLength(const Vector3& v);
+[[nodiscard]] bool IsNearZero(const Vector3& v);
 [[nodiscard]] constexpr float Lerp(const float a, const float b, const float t);
 [[nodiscard]] constexpr Vector3 Lerp(const Vector3& a, const Vector3& b, const float t);
 
