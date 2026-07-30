@@ -1,10 +1,24 @@
 #include "pch.h"
 #include "Util.h"
 
+enum class eMaterialType
+{
+	None,
+	Lambertian,
+	Metal
+};
+
+struct Material
+{
+	Color Albedo;
+	eMaterialType Type;
+};
+
 struct Sphere
 {
 	Point3 Center;
 	float Radius;
+	Material* Material;
 };
 
 struct CollisionResult
@@ -34,7 +48,8 @@ constexpr Vector3 PIXEL00_LOCATION = VIEWPORT_LEFT_TOP + 0.5f * (PIXEL_DELTA_U +
 constexpr uint32_t SAMPLE_COUNT_PER_PIXEL = 500;
 constexpr uint32_t MAX_RAY_DEPTH = 10;
 
-static std::array<Sphere, 2> gSpheres;
+static std::array<Sphere, 3> gSpheres;
+static std::array<Material, 2> gMaterials;
 
 static void Initialize();
 static void Render(uint32_t* framebuffer, const uint32_t pitch);
@@ -101,18 +116,39 @@ QUIT_PROCESS:
 
 void Initialize()
 {
+	gMaterials[0] =
+	{
+		.Albedo = { 0.1f, 0.2f, 0.0f },
+		.Type = eMaterialType::Metal
+	};
+
+	gMaterials[1] =
+	{
+		.Albedo = { 0.8f, 0.8f, 0.0f },
+		.Type = eMaterialType::Lambertian
+	};
+
 	// Main
 	gSpheres[0] =
 	{
-		.Center = { 0.0f, 0.0f, -1.0f },
-		.Radius = 0.5f
+		.Center = { -1.0f, 0.0f, -1.0f },
+		.Radius = 0.5f,
+		.Material = &gMaterials[0]
+	};
+
+	gSpheres[1] =
+	{
+		.Center = { 1.0f, 0.0f, -1.0f },
+		.Radius = 0.5f,
+		.Material = &gMaterials[0]
 	};
 
 	// Ground
-	gSpheres[1] =
+	gSpheres[2] =
 	{
 		.Center = { 0.0f, -100.5f, -1.0f },
-		.Radius = 100.0f
+		.Radius = 100.0f,
+		.Material = &gMaterials[1]
 	};
 }
 
@@ -182,6 +218,7 @@ Color GetRayColor(const Ray& ray, const uint32_t depth)
 	}
 
 	CollisionResult nearestCollisionResult{ .Distance = FLT_MAX };
+	Material* nearestCollisionMaterial = nullptr;
 
 	for (const Sphere& sphere : gSpheres)
 	{
@@ -191,25 +228,40 @@ Color GetRayColor(const Ray& ray, const uint32_t depth)
 			and collisionResult.Distance < nearestCollisionResult.Distance)
 		{
 			nearestCollisionResult = collisionResult;
+			nearestCollisionMaterial = sphere.Material;
 		}
 	}
 
 	if (const bool bCollision = (nearestCollisionResult.Distance < FLT_MAX);
 		bCollision)
 	{
-		Ray reflectedRay
-		{
-			.Origin = nearestCollisionResult.Point,
-			.Direction = Normalize(nearestCollisionResult.Normal + GetRandomUnitVector())
-		};
+		Ray reflectedRay{ .Origin = nearestCollisionResult.Point };
 
-		if (IsNearZero(reflectedRay.Direction))
+		switch (nearestCollisionMaterial->Type)
 		{
-			reflectedRay.Direction = nearestCollisionResult.Normal;
+		case eMaterialType::Lambertian:
+		{
+			reflectedRay.Direction = Normalize(nearestCollisionResult.Normal + GetRandomUnitVector());
+
+			if (IsNearZero(reflectedRay.Direction))
+			{
+				reflectedRay.Direction = nearestCollisionResult.Normal;
+			}
+			break;
 		}
 
-		const Color color = 0.5f * GetRayColor(reflectedRay, depth - 1);
+		case eMaterialType::Metal:
+		{
+			reflectedRay.Direction = ReflectVector(ray.Direction, nearestCollisionResult.Normal);
+			break;
+		}
 
+		default:
+			MASSERT(false, "지원하지 않는 머티리얼 유형입니다. %ud", static_cast<uint32_t>(nearestCollisionMaterial->Type));
+			break;
+		}
+
+		const Color color = nearestCollisionMaterial->Albedo * GetRayColor(reflectedRay, depth - 1);
 		return color;
 	}
 
