@@ -11,6 +11,7 @@ enum class eMaterialType
 struct Material
 {
 	Color Albedo;
+	float Fuzz; // metal Àü¿ë
 	eMaterialType Type;
 };
 
@@ -45,11 +46,11 @@ constexpr float FOCAL_LENGTH = 1.0f;
 constexpr Point3 CAMERA_CENTER{};
 constexpr Vector3 VIEWPORT_LEFT_TOP = CAMERA_CENTER - Vector3(0.0f, 0.0f, FOCAL_LENGTH) - (VIEWPORT_U * 0.5f) - (VIEWPORT_V * 0.5f);
 constexpr Vector3 PIXEL00_LOCATION = VIEWPORT_LEFT_TOP + 0.5f * (PIXEL_DELTA_U + PIXEL_DELTA_V);
-constexpr uint32_t SAMPLE_COUNT_PER_PIXEL = 500;
+constexpr uint32_t SAMPLE_COUNT_PER_PIXEL = 5;
 constexpr uint32_t MAX_RAY_DEPTH = 10;
 
-static std::array<Sphere, 3> gSpheres;
-static std::array<Material, 2> gMaterials;
+static std::array<Sphere, 4> gSpheres;
+static std::array<Material, 4> gMaterials;
 
 static void Initialize();
 static void Render(uint32_t* framebuffer, const uint32_t pitch);
@@ -118,37 +119,58 @@ void Initialize()
 {
 	gMaterials[0] =
 	{
-		.Albedo = { 0.1f, 0.2f, 0.0f },
-		.Type = eMaterialType::Metal
-	};
-
-	gMaterials[1] =
-	{
 		.Albedo = { 0.8f, 0.8f, 0.0f },
 		.Type = eMaterialType::Lambertian
 	};
 
-	// Main
-	gSpheres[0] =
+	gMaterials[1] =
 	{
-		.Center = { -1.0f, 0.0f, -1.0f },
-		.Radius = 0.5f,
-		.Material = &gMaterials[0]
+		.Albedo = { 0.1f, 0.2f, 0.5f },
+		.Type = eMaterialType::Lambertian
 	};
 
-	gSpheres[1] =
+	gMaterials[2] =
 	{
-		.Center = { 1.0f, 0.0f, -1.0f },
-		.Radius = 0.5f,
-		.Material = &gMaterials[0]
+		.Albedo = { 0.8f, 0.8f, 0.8f },
+		.Fuzz = 0.3f,
+		.Type = eMaterialType::Metal
+	};
+
+	gMaterials[3] =
+	{
+		.Albedo = { 0.8f, 0.6f, 0.2f },
+		.Fuzz = 1.0f,
+		.Type = eMaterialType::Metal
 	};
 
 	// Ground
-	gSpheres[2] =
+	gSpheres[0] =
 	{
 		.Center = { 0.0f, -100.5f, -1.0f },
 		.Radius = 100.0f,
+		.Material = &gMaterials[0]
+	};
+
+	// Center
+	gSpheres[1] =
+	{
+		.Center = { 0.0f, 0.0f, -1.2f },
+		.Radius = 0.5f,
 		.Material = &gMaterials[1]
+	};
+
+	gSpheres[2] =
+	{
+		.Center = { -1.0f, 0.0f, -1.0f },
+		.Radius = 0.5f,
+		.Material = &gMaterials[2]
+	};
+
+	gSpheres[3] =
+	{
+		.Center = { 1.0f, 0.0f, -1.0f },
+		.Radius = 0.5f,
+		.Material = &gMaterials[3]
 	};
 }
 
@@ -253,6 +275,7 @@ Color GetRayColor(const Ray& ray, const uint32_t depth)
 		case eMaterialType::Metal:
 		{
 			reflectedRay.Direction = ReflectVector(ray.Direction, nearestCollisionResult.Normal);
+			reflectedRay.Direction += (nearestCollisionMaterial->Fuzz * GetRandomUnitVector());
 			break;
 		}
 
