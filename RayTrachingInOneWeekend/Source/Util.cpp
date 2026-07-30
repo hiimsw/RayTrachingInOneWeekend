@@ -98,6 +98,12 @@ bool IsNearZero(const Vector3& v)
 	return result;
 }
 
+Vector3 ReflectVector(const Vector3& v, const Vector3& normal)
+{
+	const Vector3 result = v - 2.0f * DotProduct(v, normal) * normal;
+	return result;
+}
+
 float RandRange(const float min, const float max)
 {
 	const float randFloat = float(std::rand()) / RAND_MAX;
