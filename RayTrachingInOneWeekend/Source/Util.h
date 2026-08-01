@@ -47,6 +47,7 @@ static_assert(std::is_trivial<Vector3>::value and std::is_standard_layout<Vector
 [[nodiscard]] float GetLength(const Vector3& v);
 [[nodiscard]] bool IsNearZero(const Vector3& v);
 [[nodiscard]] Vector3 ReflectVector(const Vector3& v, const Vector3& normal);
+[[nodiscard]] Vector3 RefractVector(const Vector3& v, const Vector3& normal, const float etaIn, const float etaOut);
 [[nodiscard]] constexpr float Lerp(const float a, const float b, const float t);
 [[nodiscard]] constexpr Vector3 Lerp(const Vector3& a, const Vector3& b, const float t);
 

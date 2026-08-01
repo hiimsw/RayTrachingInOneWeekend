@@ -104,6 +104,16 @@ Vector3 ReflectVector(const Vector3& v, const Vector3& normal)
 	return result;
 }
 
+Vector3 RefractVector(const Vector3& v, const Vector3& normal, const float etaIn, const float etaOut)
+{
+	const Vector3 outParallelRay = (etaIn / etaOut) * (v - normal * DotProduct(v, normal));
+	const float outParallelRayLengthSqaured = min(GetLengthSquared(outParallelRay), 1.0f);
+	const Vector3 outPerpendicularRay = -sqrtf(1.0f - outParallelRayLengthSqaured) * normal;
+	const Vector3 result = outParallelRay + outPerpendicularRay;
+
+	return result;
+}
+
 float RandRange(const float min, const float max)
 {
 	const float randFloat = float(std::rand()) / RAND_MAX;
