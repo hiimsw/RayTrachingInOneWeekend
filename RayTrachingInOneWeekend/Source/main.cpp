@@ -5,14 +5,20 @@ enum class eMaterialType
 {
 	None,
 	Lambertian,
+	Dielectrics,
 	Metal
 };
 
 struct Material
 {
 	Color Albedo;
-	float Fuzz; // metal 전용
 	eMaterialType Type;
+
+	// metal 전용
+	float Fuzz;
+
+	// dielectrics 전용
+	float RefractionIndex;
 };
 
 struct Sphere
@@ -27,6 +33,7 @@ struct CollisionResult
 	Point3 Point;
 	Vector3 Normal;
 	float Distance;
+	bool IsFrontFace;
 };
 
 constexpr float ASPECT_RATIO = 16.0f / 9.0f;
@@ -131,16 +138,16 @@ void Initialize()
 
 	gMaterials[2] =
 	{
-		.Albedo = { 0.8f, 0.8f, 0.8f },
-		.Fuzz = 0.3f,
-		.Type = eMaterialType::Metal
+		.Albedo = { 1.0f, 1.0f, 1.0f },
+		.Type = eMaterialType::Dielectrics,
+		.RefractionIndex = 1.5f
 	};
 
 	gMaterials[3] =
 	{
 		.Albedo = { 0.8f, 0.6f, 0.2f },
+		.Type = eMaterialType::Metal,
 		.Fuzz = 1.0f,
-		.Type = eMaterialType::Metal
 	};
 
 	// Ground
@@ -159,6 +166,7 @@ void Initialize()
 		.Material = &gMaterials[1]
 	};
 
+	// Left
 	gSpheres[2] =
 	{
 		.Center = { -1.0f, 0.0f, -1.0f },
@@ -166,6 +174,7 @@ void Initialize()
 		.Material = &gMaterials[2]
 	};
 
+	// Right
 	gSpheres[3] =
 	{
 		.Center = { 1.0f, 0.0f, -1.0f },
@@ -257,25 +266,39 @@ Color GetRayColor(const Ray& ray, const uint32_t depth)
 	if (const bool bCollision = (nearestCollisionResult.Distance < FLT_MAX);
 		bCollision)
 	{
-		Ray reflectedRay{ .Origin = nearestCollisionResult.Point };
+		Ray scatteredRay{ .Origin = nearestCollisionResult.Point };
 
 		switch (nearestCollisionMaterial->Type)
 		{
 		case eMaterialType::Lambertian:
 		{
-			reflectedRay.Direction = Normalize(nearestCollisionResult.Normal + GetRandomUnitVector());
+			scatteredRay.Direction = Normalize(nearestCollisionResult.Normal + GetRandomUnitVector());
 
-			if (IsNearZero(reflectedRay.Direction))
+			if (IsNearZero(scatteredRay.Direction))
 			{
-				reflectedRay.Direction = nearestCollisionResult.Normal;
+				scatteredRay.Direction = nearestCollisionResult.Normal;
 			}
 			break;
 		}
 
 		case eMaterialType::Metal:
 		{
-			reflectedRay.Direction = ReflectVector(ray.Direction, nearestCollisionResult.Normal);
-			reflectedRay.Direction += (nearestCollisionMaterial->Fuzz * GetRandomUnitVector());
+			scatteredRay.Direction = ReflectVector(ray.Direction, nearestCollisionResult.Normal);
+			scatteredRay.Direction += (nearestCollisionMaterial->Fuzz * GetRandomUnitVector());
+			break;
+		}
+		
+		case eMaterialType::Dielectrics:
+		{
+			float eatIn = 1.0f;
+			float eatOut = nearestCollisionMaterial->RefractionIndex;
+
+			if (not nearestCollisionResult.IsFrontFace)
+			{
+				std::swap(eatIn, eatOut);
+			}
+
+			scatteredRay.Direction = RefractVector(ray.Direction, nearestCollisionResult.Normal, eatIn, eatOut);
 			break;
 		}
 
@@ -284,7 +307,7 @@ Color GetRayColor(const Ray& ray, const uint32_t depth)
 			break;
 		}
 
-		const Color color = nearestCollisionMaterial->Albedo * GetRayColor(reflectedRay, depth - 1);
+		const Color color = nearestCollisionMaterial->Albedo * GetRayColor(scatteredRay, depth - 1);
 		return color;
 	}
 
@@ -333,6 +356,12 @@ bool CheckCollisionRaySphere(const Ray& ray, const Sphere& sphere, CollisionResu
 	outCollisionResult->Distance = distance;
 	outCollisionResult->Point = GetPointOnRay(ray, distance);
 	outCollisionResult->Normal = (outCollisionResult->Point - sphere.Center) / sphere.Radius;
+	outCollisionResult->IsFrontFace = (DotProduct(ray.Direction, outCollisionResult->Normal) < 0.0f);
+
+	if (not outCollisionResult->IsFrontFace)
+	{
+		outCollisionResult->Normal *= -1.0f;
+	}
 
 	return true;
 }
