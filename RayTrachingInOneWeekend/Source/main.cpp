@@ -140,7 +140,7 @@ void Initialize()
 	{
 		.Albedo = { 1.0f, 1.0f, 1.0f },
 		.Type = eMaterialType::Dielectrics,
-		.RefractionIndex = 1.5f
+		.RefractionIndex = 1.0f / 1.33f // air bubble
 	};
 
 	gMaterials[3] =
@@ -249,7 +249,7 @@ Color GetRayColor(const Ray& ray, const uint32_t depth)
 	}
 
 	CollisionResult nearestCollisionResult{ .Distance = FLT_MAX };
-	Material* nearestCollisionMaterial = nullptr;
+	const Material* nearestCollisionMaterial = nullptr;
 
 	for (const Sphere& sphere : gSpheres)
 	{
@@ -290,7 +290,8 @@ Color GetRayColor(const Ray& ray, const uint32_t depth)
 		
 		case eMaterialType::Dielectrics:
 		{
-			float eatIn = 1.0f;
+			constexpr float AIR_REFRACTION_INDEX = 1.0f;
+			float eatIn = AIR_REFRACTION_INDEX;
 			float eatOut = nearestCollisionMaterial->RefractionIndex;
 
 			if (not nearestCollisionResult.IsFrontFace)
@@ -298,7 +299,20 @@ Color GetRayColor(const Ray& ray, const uint32_t depth)
 				std::swap(eatIn, eatOut);
 			}
 
-			scatteredRay.Direction = RefractVector(ray.Direction, nearestCollisionResult.Normal, eatIn, eatOut);
+			const float cosTheta = std::fmin(-DotProduct(ray.Direction, nearestCollisionResult.Normal), 1.0f);
+			const float sinTheta = std::sqrtf(1.0f - cosTheta * cosTheta);
+			const float etaRatio = eatIn / eatOut;
+			const bool bRefraction = (etaRatio * sinTheta <= 1.0f);
+
+			if (bRefraction)
+			{
+				scatteredRay.Direction = RefractVector(ray.Direction, nearestCollisionResult.Normal, eatIn, eatOut);
+			}
+			else
+			{
+				scatteredRay.Direction = ReflectVector(ray.Direction, nearestCollisionResult.Normal);
+			}
+
 			break;
 		}
 
